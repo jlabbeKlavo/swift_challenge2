@@ -1,0 +1,18 @@
+{
+    "name": "klave-connector",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "There are no tests so far"
+    },
+    "author": "Jeremie Labbe",
+    "license": "ISC",
+    "dependencies": {
+        "@klave/sdk": "0.13.0-dev.0",
+        "@secretarium/connector": "^0.17.0",
+        "eckles": "^1.4.1",
+        "uuid": "^9.0.1"
+    }
+}
+
