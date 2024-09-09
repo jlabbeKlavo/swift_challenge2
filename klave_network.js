@@ -4,6 +4,7 @@ const { openSCP, closeSCP, applyTransaction, applyQuery } = require("./scp-utils
 const fs = require('fs');
 const KLAVE_JEREMIE_ENDPOINT = 'wss://thranduil4.node.secretarium.org:4201/';
 // const KLAVE_DEV_ENDPOINT = 'wss://klave-dev.secretarium.org/';
+// const KLAVE_PROD_ENDPOINT = 'wss://klave-prod.secretarium.org/';
 const KLAVE_DCAPP_WASM_MANAGER = 'wasm-manager';
 const KLAVE_CONNECTION_KEYPAIR = './config/connectionKeys/klave1.secretarium';
 //key password provided below just for test purpose !!!!!!!!!!!!!!!!

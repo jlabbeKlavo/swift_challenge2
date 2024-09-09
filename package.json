@@ -9,7 +9,7 @@
     "author": "Jeremie Labbe",
     "license": "ISC",
     "dependencies": {
-        "@klave/sdk": "0.13.0-dev.0",
+        "@klave/sdk": "0.12.0-dev.5",
         "@secretarium/connector": "^0.17.0",
         "eckles": "^1.4.1",
         "uuid": "^9.0.1"

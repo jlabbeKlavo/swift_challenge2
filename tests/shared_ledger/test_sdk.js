@@ -49,7 +49,7 @@ const importPublicKey = async (pem) => {
     }
   };
 
-  let result = await klaveTransaction(fqdn,"importKey", importKeyInput);
+  let result = await klaveTransaction(fqdn, "importKey", importKeyInput);
   return result.message;
 }
 

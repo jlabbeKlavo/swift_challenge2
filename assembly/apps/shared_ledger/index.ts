@@ -1,10 +1,8 @@
 import { Context, Notifier } from "@klave/sdk/assembly";
-import { TradeInput, ConfirmTradeInput, SettleTradeInput, QueryTradeByUTIInput, SetIdentitiesInput, UserRequestInput, ApproveUserRequestInput, SharedLedgerIDInput, TransferAssetInput} from "./shared_ledger/inputs/types";
-import { SubmitTradeOutput } from "./shared_ledger/outputs/types";
+import { TradeInput, ConfirmTradeInput, SettleTradeInput, SetIdentitiesInput, UserRequestInput, ApproveUserRequestInput, SharedLedgerIDInput, TransferAssetInput, SubmitTradeInput} from "./shared_ledger/inputs/types";
+import { GenericOutput } from "./shared_ledger/outputs/types";
 import { Keys } from "./shared_ledger/keys";
 import { success, error } from "./klave/types";
-import { Trade } from "./shared_ledger/trade";
-import { encode as b64encode } from 'as-base64/assembly';
 import { UserRequests } from "./shared_ledger/userRequests";
 import { UserRequest } from "./shared_ledger/userRequest";
 import { SharedLedger } from "./shared_ledger/sharedLedger";
@@ -15,40 +13,17 @@ import { SharedLedgers } from "./shared_ledger/sharedLedgers";
 /**
  * @transaction
  */
-export function submitTrade(input: TradeInput): void {
+export function submitTrade(input: SubmitTradeInput): void {
     let sharedLedger = SharedLedger.load(input.SLID);
-    if (!sharedLedger) {
+    if (sharedLedger === null) {
         error(`SharedLedger does not exist. Create it first.`);
         return;
     }
-
-    let success = sharedLedger.addTrade(input);
-    if (!success) {
-        error(`Trade successfully submitted.`);
+    
+    if (sharedLedger.addTrade(input)) {
+        sharedLedger.save();    
         return;
     }
-
-    // let keys = Keys.load();
-    // if (keys.klaveServer_private_key == "") {
-    //     error(`Cannot read klaveServer identity.`);
-    //     return;
-    // }
-
-    // let trade = Trade.load(input.UTI);
-    // if (!trade) {
-    //     error(`Trade should have been created earlier.`);
-    //     return;
-    // }
-
-    // Notifier.sendJson<SubmitTradeOutput>({
-    //     requestId: Context.get('request_id'),
-    //     result: {
-    //         status: "",
-    //         message: "",
-    //         UTI: trade.UTI,
-    //         tokenB64: trade.tokenB64
-    //     }
-    // });
 }
 
 /**
@@ -56,7 +31,7 @@ export function submitTrade(input: TradeInput): void {
  */
 export function confirmTrade(input: ConfirmTradeInput): void {
     let sharedLedger = SharedLedger.load(input.SLID);
-    if (!sharedLedger) {
+    if (sharedLedger === null) {
         error(`SharedLedger does not exist. Create it first.`);
         return;
     }
@@ -67,13 +42,22 @@ export function confirmTrade(input: ConfirmTradeInput): void {
     }
 
     let user = User.load(Context.get('sender'));
-    if (!user)
+    if (user === null)
     {
         error("User not found");
         return;
     }
 
-    sharedLedger.confirmTrade(input);
+    if (sharedLedger.confirmTrade(input)) {
+        Notifier.sendJson<GenericOutput>({
+            requestId: Context.get('request_id'),
+            result: {
+                status: "success",
+                message: "",
+                UTI: input.UTI,
+            }
+        });    
+    }
 }
 
 /**
@@ -81,7 +65,7 @@ export function confirmTrade(input: ConfirmTradeInput): void {
  */
 export function transferAsset(input: TransferAssetInput): void {
     let sharedLedger = SharedLedger.load(input.SLID);
-    if (!sharedLedger) {
+    if (sharedLedger === null) {
         error(`SharedLedger does not exist. Create it first.`);
         return;
     }
@@ -92,13 +76,22 @@ export function transferAsset(input: TransferAssetInput): void {
     }
 
     let user = User.load(Context.get('sender'));
-    if (!user)
+    if (user === null)
     {
         error("User not found");
         return;
     }
 
-    sharedLedger.transferTrade(input);
+    if (sharedLedger.transferTrade(input)) {
+        Notifier.sendJson<GenericOutput>({
+            requestId: Context.get('request_id'),
+            result: {
+                status: "success",
+                message: "",
+                UTI: input.UTI,
+            }
+        });    
+    }
 }
 
 /**
@@ -106,7 +99,7 @@ export function transferAsset(input: TransferAssetInput): void {
  */
 export function settleTrade(input: SettleTradeInput): void {
     let sharedLedger = SharedLedger.load(input.SLID);
-    if (!sharedLedger) {
+    if (sharedLedger === null) {
         error(`SharedLedger does not exist. Create it first.`);
         return;
     }
@@ -117,13 +110,46 @@ export function settleTrade(input: SettleTradeInput): void {
     }
 
     let user = User.load(Context.get('sender'));
-    if (!user)
+    if (user === null)
     {
         error("User not found");
         return;
     }
 
-    sharedLedger.settleTrade(input);
+    if (sharedLedger.settleTrade(input)) {
+        Notifier.sendJson<GenericOutput>({
+            requestId: Context.get('request_id'),
+            result: {
+                status: "success",
+                message: "",
+                UTI: input.UTI,
+            }
+        });    
+    }
+}
+
+/**
+ * @query
+ */
+export function queryInfo(input: TradeInput): void {
+    let sharedLedger = SharedLedger.load(input.SLID);
+    if (sharedLedger === null) {
+        error(`SharedLedger does not exist. Create it first.`);
+        return;
+    }
+
+    if (sharedLedger.locked) {
+        error(`SharedLedger ${input.SLID} is now locked.`);
+        return;
+    }
+
+    let user = User.load(Context.get('sender'));
+    if (user === null)
+    {
+        error("User not found");
+        return;
+    }
+    sharedLedger.queryInfo(input.UTI, input.tokenB64);
 }
 
 /**
@@ -145,7 +171,7 @@ export function createSuperAdmin(unused: string): void {
  */
 export function createSharedLedger(input: SharedLedgerIDInput): void {
     let user = User.load(Context.get('sender'));
-    if (!user)
+    if (user === null)
     {
         error("User not found");
         return;
@@ -156,7 +182,7 @@ export function createSharedLedger(input: SharedLedgerIDInput): void {
         return;
     }
     let sharedLedgers = SharedLedgers.load();
-    if (sharedLedgers.addSharedLedger(input.sharedLedgerId)) {
+    if (sharedLedgers.addSharedLedger(input.SLID)) {
         sharedLedgers.save();
     }    
 }
@@ -166,12 +192,12 @@ export function createSharedLedger(input: SharedLedgerIDInput): void {
  */
 export function createUserRequest(input: UserRequestInput): void {
     let users = Users.load();
-    if (users.addUser(Context.get('sender'), input.sharedLedgerId, "pending", input.jurisdiction)) {
+    if (users.addUser(Context.get('sender'), input.SLID, "pending", input.jurisdiction)) {
         users.save();
     }
     
     let userRequests = UserRequests.load();
-    if (userRequests.addUserRequest(input.sharedLedgerId, input.role, input.jurisdiction)) {
+    if (userRequests.addUserRequest(input.SLID, input.role, input.jurisdiction)) {
         userRequests.save();
     }
 }
@@ -181,7 +207,7 @@ export function createUserRequest(input: UserRequestInput): void {
  */
 export function listUserRequests(unused: string): void {
     let user = User.load(Context.get('sender'));
-    if (!user)
+    if (user === null)
     {
         error("User not found");
         return;
@@ -201,7 +227,7 @@ export function listUserRequests(unused: string): void {
  */
 export function approveUserRequest(input: ApproveUserRequestInput): void {
     let user = User.load(Context.get('sender'));
-    if (!user)
+    if (user === null)
     {
         error("User not found");
         return;
@@ -222,7 +248,7 @@ export function approveUserRequest(input: ApproveUserRequestInput): void {
     if (userRequest.sharedLedgerId == "super" && userRequest.role == "admin") {
         // This is a user request to become an admin
         let user = User.load(userRequest.userId);
-        if (!user)
+        if (user === null)
         {
             error("User not found");
             return;
@@ -234,14 +260,14 @@ export function approveUserRequest(input: ApproveUserRequestInput): void {
     }
     else {
         let sharedLedger = SharedLedger.load(userRequest.sharedLedgerId);
-        if (!sharedLedger)
+        if (sharedLedger === null)
         {
-            error("SharedLedger not found");
+            error(`SharedLedger ${userRequest.sharedLedgerId} not found`);
             return;
         }
         sharedLedger.addUser(userRequest.userId, userRequest.role, userRequest.jurisdiction);
         sharedLedger.save();
-        success(`Approved user request ${userRequest.id} for user ${userRequest.userId} to join dataroom ${userRequest.sharedLedgerId} as ${userRequest.role}`);
+        success(`Approved user request ${userRequest.id} for user ${userRequest.userId} to join sharedLedger ${userRequest.sharedLedgerId} as ${userRequest.role}`);
     }    
     
     let userRequests = UserRequests.load();    
@@ -255,7 +281,7 @@ export function approveUserRequest(input: ApproveUserRequestInput): void {
  */
 export function resetIdentities(input: SetIdentitiesInput): void {
     let user = User.load(Context.get('sender'));
-    if (!user)
+    if (user === null)
     {
         error("User not found");
         return;
@@ -290,9 +316,29 @@ export function getPublicKeys(unused: string): void {
 /**
  * @query 
  */
+export function listSharedLedgers(unused: string): void {
+    let sharedLedgers = SharedLedgers.load();
+    sharedLedgers.list();
+}
+
+/**
+ * @query 
+ */
+export function getSharedLedgerContent(input: SharedLedgerIDInput): void {
+    let sharedLedger = SharedLedger.load(input.SLID);
+    if (sharedLedger === null) {
+        error(`SharedLedger ${input.SLID} does not exist. Create it first.`);
+        return;
+    }
+    sharedLedger.getContent();
+}
+
+/**
+ * @query 
+ */
 export function getUserContent(unused: string): void {
     let user = User.load(Context.get('sender'));
-    if (!user)
+    if (user === null)
     {
         error("User not found");
         return;
@@ -305,7 +351,7 @@ export function getUserContent(unused: string): void {
  */
 export function clearAll(unused: string): void {
     let user = User.load(Context.get('sender'));
-    if (!user)
+    if (user === null)
     {
         error("User not found");
         return;
