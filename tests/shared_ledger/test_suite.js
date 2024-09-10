@@ -55,7 +55,7 @@ const getUserContent = async () => {
   return result.result;
 }
 
-const submitTrade = async (sharedLedgerId, buyer, seller, asset, quantity, price, tradeDate) => {
+const submitTrade = async (sharedLedgerId, buyer, seller, asset, quantity, price, tradeDate, jurisdiction) => {
   let drInput = {
     "SLID": sharedLedgerId,
     "UTI": "",
@@ -64,10 +64,23 @@ const submitTrade = async (sharedLedgerId, buyer, seller, asset, quantity, price
     "asset": asset,
     "quantity": quantity,
     "price": price,
-    "tradeDate": tradeDate
+    "tradeDate": tradeDate,
+    "jurisdiction": jurisdiction
   };  
 
   let result = await klaveTransaction(fqdn,"submitTrade", drInput);
+  return result;
+}
+
+const executeTrade = async (sharedLedgerId, UTI, tokenB64, executionStatus) => {
+  let drInput = {
+    "SLID": sharedLedgerId,
+    "UTI": UTI,
+    "tokenB64": tokenB64,
+    "executionStatus": executionStatus
+  };  
+
+  let result = await klaveTransaction(fqdn,"executeTrade", drInput);
   return result;
 }
 
@@ -107,14 +120,33 @@ const settleTrade = async (sharedLedgerId, UTI, tokenB64, settlementStatus) => {
   return result;
 }
 
-const queryInfo = async (sharedLedgerId, UTI, tokenB64) => {
+const getTradeInfo = async (sharedLedgerId, UTI, tokenB64) => {
   let drInput = {
     "SLID": sharedLedgerId,
     "UTI": UTI,
     "tokenB64": tokenB64    
   };  
 
-  let result = await klaveTransaction(fqdn,"queryInfo", drInput);
+  let result = await klaveTransaction(fqdn,"getTradeInfo", drInput);
+  return result;
+}
+
+const getMultipleTradeInfo = async (sharedLedgerId, tradeIdentifications) => {
+  let trades = [];
+  for (let i = 0; i < tradeIdentifications.length; i++) {
+    let trade = {
+      "UTI": tradeIdentifications[i].UTI, 
+      "tokenB64": tradeIdentifications[i].tokenB64
+    };
+    trades.push(trade);
+  }
+
+  let drInput = {
+    "SLID": sharedLedgerId,
+    "trades": trades,
+  };  
+
+  let result = await klaveTransaction(fqdn,"getMultipleTradeInfo", drInput);
   return result;
 }
 
@@ -237,7 +269,7 @@ const testAddTrade = async (user, sharedLedgerId, role, jurisdiction, buyer, sel
       console.error("User not associated with sharedLedger");
       return;
     }
-    let result = await submitTrade(sharedLedgerId, buyer, seller, asset, quantity, price, tradeDate);
+    let result = await submitTrade(sharedLedgerId, buyer, seller, asset, quantity, price, tradeDate, jurisdiction);
     if (result.result.status == "success") {
       UTI = result.result.UTI;
       tokenB64 = result.result.tokenB64;
@@ -252,7 +284,7 @@ const testAddTrade = async (user, sharedLedgerId, role, jurisdiction, buyer, sel
   return [UTI, tokenB64];
 }
 
-const testConfirmTrade = async (user, sharedLedgerId, role, jurisdiction, UTI, tokenB64, confirmationStatus) => {
+const testActionOnTrade = async (user, sharedLedgerId, role, jurisdiction, UTI, tokenB64, action, actionStatus) => {
   let user_connected = await klaveOpenConnection(user);
   console.log("user_connected: ", user_connected);
 
@@ -277,7 +309,22 @@ const testConfirmTrade = async (user, sharedLedgerId, role, jurisdiction, UTI, t
       console.error("User not associated with sharedLedger");
       return;
     }
-    let result = await confirmTrade(sharedLedgerId, UTI, tokenB64, confirmationStatus);
+
+    let result = null;
+    switch (action) {
+      case "execute":
+        result = await executeTrade(sharedLedgerId, UTI, tokenB64, actionStatus);
+        break;
+      case "confirm":
+        result = await confirmTrade(sharedLedgerId, UTI, tokenB64, actionStatus);
+        break;
+      case "settle":
+        result = await settleTrade(sharedLedgerId, UTI, tokenB64, actionStatus);
+        break;
+      case "transfer":
+        result = await transferAsset(sharedLedgerId, UTI, tokenB64, actionStatus);
+        break;
+    }
   }
   klaveCloseConnection();    
 }
@@ -326,7 +373,36 @@ const testQueryInfo = async (user, sharedLedgerId, UTI, tokenB64) => {
       console.error("User not associated with sharedLedger");
       return;
     }
-    let result = await queryInfo(sharedLedgerId, UTI, tokenB64);
+    let result = await getTradeInfo(sharedLedgerId, UTI, tokenB64);
+  }
+  klaveCloseConnection();  
+}
+
+const testAudit = async (user, sharedLedgerId, role, jurisdiction, trades) => {
+  let user_connected = await klaveOpenConnection(user);
+  console.log("user_connected: ", user_connected);
+
+  if (user_connected) {
+    let userContent = await getUserContent();
+    if (!userContent) {
+      console.error("Error getting user content");
+
+      let success = await createUserRequest(sharedLedgerId, role, jurisdiction);
+      if (success == false) {
+        console.error("Error creating user request");
+        return;
+      }    
+      return;
+    }    
+    if (userContent.roles.length == 0) {
+      console.error("No roles found");
+      return;
+    }
+    if (userContent.roles[0].sharedLedgerId != sharedLedgerId) {
+      console.error("User not associated with sharedLedger");
+      return;
+    }
+    let result = await getMultipleTradeInfo(sharedLedgerId, trades);
   }
   klaveCloseConnection();  
 }
@@ -336,7 +412,8 @@ module.exports = {
     clearSharedLedgerApp,
     testSharedLedger,
     testAddTrade,
-    testConfirmTrade,
+    testActionOnTrade,
     testApproveRequests,
     testQueryInfo,
+    testAudit,    
 }
