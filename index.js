@@ -7,7 +7,7 @@ const doNotDeployApp = false;
 const runTests = async () => {
   // await deployTestSDK();
   // await deploySharedLedger();
-
+  
   let success = await clearSharedLedgerApp('klave1');
   let [sharedLedgerId1] = await testSharedLedger('klave1');
 
@@ -49,20 +49,13 @@ const runTests = async () => {
   //Keep in a list of couple UTI/tokenB64 the UTI and tokenB64 for later use
   Trades.push({UTI, tokenB64});
   
-  //klave4 has the correct role for audit but doesn't exist yet
-  success = await testAudit('klave4', sharedLedgerId1, 'regulator', 'northernEurope', Trades);
-  //klave1 approves klave4
-  success = await testApproveRequests('klave1');
-  //klave4 has the correct role for audit but doesn't exist yet
+  //klave4 has the correct role for audit but doesn't exist yet, it will be automatically created
   success = await testAudit('klave4', sharedLedgerId1, 'regulator', 'northernEurope', Trades);
 
-  //klave5 has the correct role for audit but doesn't exist yet and has the wrong jurisdiction
-  success = await testAudit('klave5', sharedLedgerId1, 'regulator', 'UK', Trades);
-  //klave1 approves klave4
-  success = await testApproveRequests('klave1');
-  //klave4 has the correct role for audit but doesn't exist yet
+  //klave5 has the correct role for audit but doesn't exist yet (will be automatically created) and has the wrong jurisdiction
   success = await testAudit('klave5', sharedLedgerId1, 'regulator', 'UK', Trades);
 
+  success = await clearSharedLedgerApp('klave1');
 };
 
 runTests();

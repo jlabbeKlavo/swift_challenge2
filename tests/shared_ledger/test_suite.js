@@ -6,7 +6,7 @@ const { importPublicKey } = require('./test_sdk');
 
 //wasm to deploy must be copied post generation coming from yarn build command
 const app_id = "test_shared_ledger";
-const fqdn = "test_shared_ledger_smart_contract_jeremie_7";
+const fqdn = "test_shared_ledger_smart_contract_jeremie_9";
 const WASM_TEST_SHARED_LEDGER = './config/wasm/shared_ledger.b64';
 
 const deploySharedLedger = async () => {
@@ -178,20 +178,14 @@ const listUserRequests = async () => {
   return result.result;
 }
 
-const createFileDigest = async (filepath) => {
-    //Create a digest of the file defined by filepath
-    let file = null;
-    try {
-      file = fs.readFileSync(filepath);
-    }
-    catch (err) {
-      console.error("Error reading file: ", err);
-      return;
-    }
-  
-    let digest = await subtle_Hash(file);
-    let digestB64 = arrayBufferToBase64(digest);
-    return digestB64;
+const addUserNoAppovalNeeded = async (sharedLedgerId, role, jurisdiction) => {
+  let addUserNoAppovalNeededInput = {
+    "SLID": sharedLedgerId,
+    "role": role,
+    "jurisdiction": jurisdiction,
+  };
+  let result = await klaveTransaction(fqdn, "addUserNoAppovalNeeded", addUserNoAppovalNeededInput);
+  return result.success;
 }
 
 const testSharedLedger = async (user) => {
@@ -387,12 +381,16 @@ const testAudit = async (user, sharedLedgerId, role, jurisdiction, trades) => {
     if (!userContent) {
       console.error("Error getting user content");
 
-      let success = await createUserRequest(sharedLedgerId, role, jurisdiction);
+      let success = await addUserNoAppovalNeeded(sharedLedgerId, role, jurisdiction);
       if (success == false) {
         console.error("Error creating user request");
         return;
       }    
-      return;
+      userContent = await getUserContent();
+      if (!userContent) {
+        console.error("Error getting user content");
+        return;
+      }
     }    
     if (userContent.roles.length == 0) {
       console.error("No roles found");
