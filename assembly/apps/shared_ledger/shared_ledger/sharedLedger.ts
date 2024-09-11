@@ -216,11 +216,12 @@ export class SharedLedger {
         if (trade.processExactMatch(user.getRole(input.SLID),input.key, input.value)) {
             trade.processStatusProgression();
             trade.save();
+            return true;
         }
-        return true;
+        return false;
     }
 
-    levenshteinMatch(input: LevenshteinMatchInput): boolean {
+    levenshteinMatch(input: LevenshteinMatchInput): false {
         if (!this.users.includes(Context.get('sender'))) {
             error(`You are not authorized to interact (Read or Write) with trades on this sharedLedger.`);
             return false;
@@ -244,8 +245,9 @@ export class SharedLedger {
         if (trade.processLevenshteinMatch(user.getRole(input.SLID),input.key, input.value, input.distance)) {
             trade.processStatusProgression();
             trade.save();
+            return true;
         }
-        return true;
+        return false;
     }
 
     boundaryMatch(input: BoundaryMatchInput): boolean {
@@ -272,8 +274,9 @@ export class SharedLedger {
         if (trade.processBoundaryMatch(user.getRole(input.SLID),input.key, input.min, input.max)) {
             trade.processStatusProgression();
             trade.save();
+            return true;
         }
-        return true;
+        return false;
     }
 
     removeTrade(input: TradeInput): boolean {   

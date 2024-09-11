@@ -47,7 +47,9 @@ export function addMetadata(input: ActionTradeInput): void {
         error("User not found");
         return;
     }
-    sharedLedger.addMetadata(input);
+    if (sharedLedger.addMetadata(input)) {
+        success(`Metadata added to trade ${input.UTI}`);
+    }
 }
 
 /**
@@ -71,7 +73,10 @@ export function exactMatch(input: KeyValueMatchInput): void {
         error("User not found");
         return;
     }
-    sharedLedger.exactMatch(input);
+    if (sharedLedger.exactMatch(input)) {
+        success(`Exact match found for ${input.key} = ${input.value}`);
+    }
+
     return;
 }
 
@@ -96,7 +101,9 @@ export function levenshteinMatch(input: LevenshteinMatchInput): void {
         error("User not found");
         return;
     }
-    sharedLedger.levenshteinMatch(input);
+    if (sharedLedger.levenshteinMatch(input)) {
+        success(`Levenshtein match found for ${input.key} = ${input.value}`);
+    }
     return;
 }
 
@@ -121,7 +128,9 @@ export function boundaryMatch(input: BoundaryMatchInput): void {
         error("User not found");
         return;
     }
-    sharedLedger.boundaryMatch(input);
+    if (sharedLedger.boundaryMatch(input)) {
+        success(`Boundary match found for ${input.key} between ${input.min} and ${input.max}`);
+    }
     return;
 }
 
