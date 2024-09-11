@@ -23,7 +23,7 @@ export class Users {
      */
     static load(): Users {
         let usersTable = Ledger.getTable(UsersTable).get("ALL");
-        if (usersTable.length == 0) {            
+        if (usersTable.length === 0) {            
             // success(`New Users Table created successfully`);
             return new Users;
         }
@@ -82,7 +82,7 @@ export class Users {
      * Send a client notification listing all existing users.     
      */
     list(): void {
-        if (this.users.length == 0) {
+        if (this.users.length === 0) {
             success(`No user found in the list of users`);
         }
         

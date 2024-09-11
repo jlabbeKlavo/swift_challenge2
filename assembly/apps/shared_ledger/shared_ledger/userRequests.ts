@@ -23,7 +23,7 @@ export class UserRequests {
      */
     static load(): UserRequests {
         let userRequestsTable = Ledger.getTable(UserRequestsTable).get("ALL");
-        if (userRequestsTable.length == 0) {            
+        if (userRequestsTable.length === 0) {            
             // success(`New UserRequests Table created successfully`);
             return new UserRequests;
         }
@@ -78,7 +78,7 @@ export class UserRequests {
      * @returns
      */
     list(): void {
-        if (this.userRequests.length == 0) {
+        if (this.userRequests.length === 0) {
             success(`No userRequest found in the list of userRequests`);
         }
         

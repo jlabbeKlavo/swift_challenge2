@@ -1,6 +1,6 @@
 import { Context, Notifier } from "@klave/sdk/assembly";
-import { TradeInput, ConfirmTradeInput, SettleTradeInput, SetIdentitiesInput, UserRequestInput, ApproveUserRequestInput, SharedLedgerIDInput, TransferAssetInput, SubmitTradeInput, MultipleTradeInput} from "./shared_ledger/inputs/types";
-import { ListOutput, GenericOutput } from "./shared_ledger/outputs/types";
+import { TradeInput, ActionTradeInput, SetIdentitiesInput, UserRequestInput, ApproveUserRequestInput, SharedLedgerIDInput, SubmitTradeInput, MultipleTradeInput} from "./shared_ledger/inputs/types";
+import { ListOutput, GenericOutput, ListTradeIDs } from "./shared_ledger/outputs/types";
 import { Keys } from "./shared_ledger/keys";
 import { success, error } from "./klave/types";
 import { UserRequests } from "./shared_ledger/userRequests";
@@ -29,7 +29,7 @@ export function submitTrade(input: SubmitTradeInput): void {
 /**
  * @transaction
  */
-export function confirmTrade(input: ConfirmTradeInput): void {
+export function addMetadata(input: ActionTradeInput): void {
     let sharedLedger = SharedLedger.load(input.SLID);
     if (sharedLedger === null) {
         error(`SharedLedger does not exist. Create it first.`);
@@ -47,23 +47,13 @@ export function confirmTrade(input: ConfirmTradeInput): void {
         error("User not found");
         return;
     }
-
-    if (sharedLedger.confirmTrade(input)) {
-        Notifier.sendJson<GenericOutput>({
-            requestId: Context.get('request_id'),
-            result: {
-                status: "success",
-                message: "",
-                UTI: input.UTI,
-            }
-        });    
-    }
+    sharedLedger.addMetadata(input);
 }
 
 /**
  * @transaction
  */
-export function transferAsset(input: TransferAssetInput): void {
+export function getAllTrades(input: SharedLedgerIDInput): void {
     let sharedLedger = SharedLedger.load(input.SLID);
     if (sharedLedger === null) {
         error(`SharedLedger does not exist. Create it first.`);
@@ -75,37 +65,8 @@ export function transferAsset(input: TransferAssetInput): void {
         return;
     }
 
-    let user = User.load(Context.get('sender'));
-    if (user === null)
-    {
-        error("User not found");
-        return;
-    }
-
-    if (sharedLedger.transferTrade(input)) {
-        Notifier.sendJson<GenericOutput>({
-            requestId: Context.get('request_id'),
-            result: {
-                status: "success",
-                message: "",
-                UTI: input.UTI,
-            }
-        });    
-    }
-}
-
-/**
- * @transaction
- */
-export function settleTrade(input: SettleTradeInput): void {
-    let sharedLedger = SharedLedger.load(input.SLID);
-    if (sharedLedger === null) {
-        error(`SharedLedger does not exist. Create it first.`);
-        return;
-    }
-
-    if (sharedLedger.locked) {
-        error(`SharedLedger ${input.SLID} is now locked.`);
+    if (!sharedLedger.users.includes(Context.get('sender'))) {
+        error(`You are not authorized to remove trades from this sharedLedger.`);
         return;
     }
 
@@ -114,18 +75,13 @@ export function settleTrade(input: SettleTradeInput): void {
     {
         error("User not found");
         return;
-    }
+    }    
+    let listTrades = sharedLedger.getAllTrades(user);
 
-    if (sharedLedger.settleTrade(input)) {
-        Notifier.sendJson<GenericOutput>({
-            requestId: Context.get('request_id'),
-            result: {
-                status: "success",
-                message: "",
-                UTI: input.UTI,
-            }
-        });    
-    }
+    Notifier.sendJson<ListTradeIDs>({
+        requestId: Context.get('request_id'),
+        result: listTrades
+    });
 }
 
 /**
@@ -281,7 +237,7 @@ export function approveUserRequest(input: ApproveUserRequestInput): void {
         return;
     }
 
-    if (userRequest.sharedLedgerId == "super" && userRequest.role == "admin") {
+    if (userRequest.sharedLedgerId === "super" && userRequest.role === "admin") {
         // This is a user request to become an admin
         let user = User.load(userRequest.userId);
         if (user === null)
