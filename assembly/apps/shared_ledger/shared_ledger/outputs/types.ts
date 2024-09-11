@@ -42,7 +42,7 @@ export class QueryTradeFromCreation {
         this.UTI = trade.UTI;
         this.status = trade.status;
         this.statusHistory = trade.statusHistory;
-        let tradeInfo = trade.tradeCreation[trade.tradeCreation.length-1];
+        let tradeInfo = trade.tradeCreation;
         this.data = new TradeInfo(tradeInfo.info);
     }
 }

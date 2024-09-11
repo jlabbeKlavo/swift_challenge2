@@ -269,7 +269,7 @@ export class SharedLedger {
             return false;
         }
 
-        if (trade.processLevenshteinMatch(user.getRole(input.SLID),input.key, input.min, input.max)) {
+        if (trade.processBoundaryMatch(user.getRole(input.SLID),input.key, input.min, input.max)) {
             trade.processStatusProgression();
             trade.save();
         }
@@ -372,13 +372,13 @@ export class SharedLedger {
             trade.auditHistory.push(new AuditLog(user.id, Context.get("trusted_time")));
             trade.save();
 
-            let tradeInfo = trade.tradeCreation[trade.tradeCreation.length-1];
+            let tradeInfo = trade.tradeCreation;
             switch (user.getRole(this.id)) {
                 case RoleType.Trader:
                 case RoleType.Dealer:
                 case RoleType.Broker:
                 case RoleType.Investor:
-                    if (tradeInfo.addedBy === user.id && trade.status === StatusType.Executed) {
+                    if (tradeInfo.addedBy == user.id && trade.status === StatusType.Executed) {
                         result.push(new TradeIdentification(trade.UTI, trade.tokenB64));
                     }
                     break;
@@ -433,15 +433,13 @@ export class SharedLedger {
             break;
             case RoleType.SettlementAgent: {
                 filteredTrade.filterPrivateComments(role);
-                filteredTrade.tradeCreation = new Array<TradeCreation>();            
+                filteredTrade.tradeCreation.clear()
                 filteredTrade.auditHistory = new Array<AuditLog>();
             }
             break;
             case RoleType.ClearingHouse: {
                 filteredTrade.filterPrivateComments(role);
-                for (let i = 0; i < filteredTrade.tradeCreation.length; i++) {
-                    filteredTrade.tradeCreation[i].info.onlyKeepAsset();
-                }
+                filteredTrade.tradeCreation.onlyKeepAsset();
                 filteredTrade.matchTradeDetails = new Array<MatchLog>();
                 filteredTrade.matchAssetTransfer = new Array<MatchLog>();
                 filteredTrade.auditHistory = new Array<AuditLog>();
@@ -450,9 +448,7 @@ export class SharedLedger {
             break;
             case RoleType.Custodian:
                 filteredTrade.filterPrivateComments(role);
-                for (let i = 0; i < filteredTrade.tradeCreation.length; i++) {
-                    filteredTrade.tradeCreation[i].info.onlyKeepAsset();
-                }
+                filteredTrade.tradeCreation.onlyKeepAsset();
                 filteredTrade.matchTradeDetails = new Array<MatchLog>();
                 filteredTrade.matchMoneyTransfer = new Array<MatchLog>();
                 filteredTrade.auditHistory = new Array<AuditLog>();

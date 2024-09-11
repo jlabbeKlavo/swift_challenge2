@@ -2,7 +2,7 @@ import { Ledger, Crypto, JSON } from '@klave/sdk'
 import { success, error } from "../klave/types"
 import { encode as b64encode, decode as b64decode } from 'as-base64/assembly';
 import { address, amount, datetime } from "../klave/types";
-import { ActionTradeInput, SubmitTradeInput } from './inputs/types';
+import { ActionTradeInput } from './inputs/types';
 import { Context } from '@klave/sdk/assembly';
 import { RoleType } from './user';
 import { levenshtein } from './levenshtein';
@@ -56,6 +56,32 @@ export class TradeCreation {
         this.datetime = datetime;
         this.info = info;
     }
+
+    clear(): void {
+        this.info.buyerName = "";
+        this.info.sellerName = "";
+        this.info.buyerCountry = "";
+        this.info.sellerCountry = "";
+        this.info.asset = "";
+        this.info.quantity = 0;
+        this.info.price = 0;
+        this.info.tradeDate = "";
+        this.info.jurisdiction = "";
+        this.addedBy = "";
+        this.datetime = "";        
+    }
+
+    onlyKeepAsset(): void {
+        this.info.buyerName = "";
+        this.info.sellerName = "";
+        this.info.buyerCountry = "";
+        this.info.sellerCountry = "";
+        this.info.quantity = 0;
+        this.info.price = 0;
+        this.info.tradeDate = "";
+        this.info.jurisdiction = "";
+    }
+
 }
 
 @JSON
@@ -124,6 +150,10 @@ export class MatchedEvent {
 @JSON 
 export class MatchCheckList {
     events: Array<MatchedEvent>;
+
+    constructor() {
+        this.events = new Array<MatchedEvent>();
+    }
 }
 
 /** Status types. */
@@ -150,7 +180,7 @@ export class Trade {
     UTI: string;                            //Unique Trade Identifier
     tokenB64: string;                       //Token allowing access to this trade
 
-    tradeCreation: Array<TradeCreation>;        
+    tradeCreation: TradeCreation;        
     tradePublicComments: Array<TradeComment>;   
     tradePrivateComments: Array<TradeComment>;  
 
@@ -168,10 +198,10 @@ export class Trade {
             //Create a UTI with a format corresponding to BOFAUS3N.TRADE20230905SEQ1234567890
             //<SWIFTCode>.TRADE<YYYYMMDD><sequence number for uniqueness>
             let datetime = parseInt(tradeInfo.tradeDate);
-            let date = new Date(i64(datetime));
+            let date = new Date(u64(datetime));
             this.UTI = "SWIFT" + b64encode(Crypto.Utils.convertToUint8Array(Crypto.getRandomValues(4))) + ".TRADE" + date.toISOString() + "SEQ" + b64encode(Crypto.Utils.convertToUint8Array(Crypto.getRandomValues(8)));
         }
-        this.tradeCreation=new Array<TradeCreation>();
+        this.tradeCreation=new TradeCreation(Context.get('sender'), Context.get("trusted_time"), tradeInfo);
         this.tradePublicComments = new Array<TradeComment>();
         this.tradePrivateComments = new Array<TradeComment>();
         this.matchTradeDetails = new Array<MatchLog>();
@@ -182,7 +212,6 @@ export class Trade {
         this.status = StatusType.Executed;
         this.statusHistory = new Array<StatusLog>();
         this.auditHistory = new Array<AuditLog>();
-        this.tradeCreation.push(new TradeCreation(Context.get('sender'), Context.get("trusted_time"), tradeInfo));
         this.statusHistory.push(new StatusLog(Context.get("trusted_time"), this.status));
     }
 
@@ -248,7 +277,6 @@ export class Trade {
 
     checkTradeDetailsMatch(): boolean {
         let tradeDetails = new MatchCheckList();
-        tradeDetails.events = new Array<MatchedEvent>();
         tradeDetails.events.push(new MatchedEvent("buyerName", false));
         tradeDetails.events.push(new MatchedEvent("buyerCountry", false));
         tradeDetails.events.push(new MatchedEvent("sellerName", false));
@@ -256,24 +284,20 @@ export class Trade {
         tradeDetails.events.push(new MatchedEvent("asset", false));        
 
         for (let i = 0; i < this.matchTradeDetails.length; i++) {
-            switch (this.matchTradeDetails[i].matchedKey) {
-                case "buyerName":
-                    tradeDetails.events[0].matched = true;
-                    break;
-                case "buyerCountry":
-                    tradeDetails.events[1].matched = true;
-                    break;
-                case "sellerName":
-                    tradeDetails.events[2].matched = true;
-                    break;
-                case "sellerCountry":
-                    tradeDetails.events[3].matched = true;
-                    break;
-                case "asset":
-                    tradeDetails.events[4].matched = true;
-                    break;
-                default:
-                    break;
+            if (this.matchTradeDetails[i].matchedKey == "buyerName") {
+                tradeDetails.events[0].matched = true;
+            }
+            if (this.matchTradeDetails[i].matchedKey == "buyerCountry") {
+                tradeDetails.events[1].matched = true;
+            }
+            if (this.matchTradeDetails[i].matchedKey == "sellerName") {
+                tradeDetails.events[2].matched = true;
+            }
+            if (this.matchTradeDetails[i].matchedKey == "sellerCountry") {
+                tradeDetails.events[3].matched = true;
+            }
+            if (this.matchTradeDetails[i].matchedKey == "asset") {
+                tradeDetails.events[4].matched = true;
             }
         }
         for (let i = 0; i < tradeDetails.events.length; i++) {
@@ -291,15 +315,11 @@ export class Trade {
         assetTransfer.events.push(new MatchedEvent("asset", false));
 
         for (let i = 0; i < this.matchAssetTransfer.length; i++) {
-            switch (this.matchAssetTransfer[i].matchedKey) {
-                case "quantity":
-                    assetTransfer.events[0].matched = true;
-                    break;
-                case "asset":
-                    assetTransfer.events[1].matched = true;
-                    break;
-                default:
-                    break;                    
+            if (this.matchTradeDetails[i].matchedKey == "quantity") {
+                assetTransfer.events[0].matched = true;
+            }
+            if (this.matchTradeDetails[i].matchedKey == "asset") {
+                assetTransfer.events[1].matched = true;
             }
         }
         for (let i = 0; i < assetTransfer.events.length; i++) {
@@ -317,15 +337,11 @@ export class Trade {
         moneyTransfer.events.push(new MatchedEvent("asset", false));
 
         for (let i = 0; i < this.matchMoneyTransfer.length; i++) {
-            switch (this.matchMoneyTransfer[i].matchedKey) {
-                case "price":
-                    moneyTransfer.events[0].matched = true;
-                    break;
-                case "asset":
-                    moneyTransfer.events[1].matched = true;
-                    break;
-                default:
-                    break;
+            if (this.matchTradeDetails[i].matchedKey == "price") {
+                moneyTransfer.events[0].matched = true;
+            }
+            if (this.matchTradeDetails[i].matchedKey == "asset") {
+                moneyTransfer.events[1].matched = true;
             }
         }
 
@@ -349,66 +365,72 @@ export class Trade {
     }
 
     exactMatch(key: string, value: string): boolean {
-        let tradeInfo = this.tradeCreation[this.tradeCreation.length-1].info;
-        switch (key) {
-            case "buyerName":
-                return tradeInfo.buyerName === value;
-            case "buyerCountry":
-                return tradeInfo.buyerCountry === value;
-            case "sellerName":
-                return tradeInfo.sellerName === value;
-            case "sellerCountry":
-                return tradeInfo.sellerCountry === value;
-            case "asset":
-                return tradeInfo.asset === value;
-            case "quantity":
-                return tradeInfo.quantity === value;
-            case "price":
-                return tradeInfo.price === value;
-            case "tradeDate":
-                return tradeInfo.tradeDate === value;
-            case "jurisdiction":
-                return tradeInfo.jurisdiction === value;
-            default:
-                error("Invalid key");
-                return false;
+        let tradeInfo = this.tradeCreation.info;
+        if (key === "buyerName") {
+            return tradeInfo.buyerName === value;
+        }
+        if (key === "buyerCountry") {
+            return tradeInfo.buyerCountry === value;
+        }
+        if (key === "sellerName") {
+            return tradeInfo.sellerName === value;
+        }
+        if (key === "sellerCountry") {
+            return tradeInfo.sellerCountry === value;
+        }
+        if (key === "asset") {
+            return tradeInfo.asset === value;
+        }
+        if (key === "jurisdiction") {
+            return tradeInfo.jurisdiction === value;
+        }
+        if (key === "quantity") {
+            return tradeInfo.quantity.toString() === value;
+        }
+        if (key === "price") {
+            return tradeInfo.price.toString() === value;
+        }
+        if (key === "tradeDate") {
+            return tradeInfo.tradeDate === value;
         }        
+        return false;
     }
 
-    levenshteinMatch(key: string, value: string): u64 {
-        let tradeInfo = this.tradeCreation[this.tradeCreation.length-1].info;
-        switch (key) {
-            case "buyerName":
-                return levenshtein(tradeInfo.buyerName, value);
-            case "buyerCountry":
-                return levenshtein(tradeInfo.buyerCountry, value);
-            case "sellerName":
-                return levenshtein(tradeInfo.sellerName, value);
-            case "sellerCountry":
-                return levenshtein(tradeInfo.sellerCountry, value);
-            case "asset":
-                return levenshtein(tradeInfo.asset, value);
-            case "jurisdiction":
-                return levenshtein(tradeInfo.jurisdiction, value);
-            default:
-                error(`Invalid key ${key}`);
-                return -1;
-        }        
+    levenshteinMatch(key: string, value: string): number {
+        let tradeInfo = this.tradeCreation.info;
+        if (key === "buyerName") {
+            return levenshtein(tradeInfo.buyerName, value);
+        }
+        if (key === "buyerCountry") {
+            return levenshtein(tradeInfo.buyerCountry, value);
+        }
+        if (key === "sellerName") {
+            return levenshtein(tradeInfo.sellerName, value);
+        }
+        if (key === "sellerCountry") {
+            return levenshtein(tradeInfo.sellerCountry, value);
+        }
+        if (key === "asset") {
+            return levenshtein(tradeInfo.asset, value);
+        }
+        if (key === "jurisdiction") {
+            return levenshtein(tradeInfo.jurisdiction, value);
+        }
+        return -1;
     }
 
     boundaryMatch(key: string, min: amount, max: amount): boolean {
-        let tradeInfo = this.tradeCreation[this.tradeCreation.length-1].info;
-        switch (key) {
-            case "quantity":
-                return min < tradeInfo.quantity && tradeInfo.quantity < max;
-            case "price":
-                return min < tradeInfo.price && tradeInfo.price < max;
-            case "tradeDate":
-                return min < tradeInfo.tradeDate && tradeInfo.tradeDate < max;
-            default:
-                error("Invalid key");
-                return false;
+        let tradeInfo = this.tradeCreation.info;
+        if (key === "quantity") {
+            return min < tradeInfo.quantity && tradeInfo.quantity < max;
         }
+        if (key === "price") {
+            return min < tradeInfo.price && tradeInfo.price < max;
+        }
+        if (key === "tradeDate") {
+            return min < parseInt(tradeInfo.tradeDate) && parseInt(tradeInfo.tradeDate) < max;
+        }
+        return false;        
     }
 
     processExactMatch(role: RoleType, key: string, value: string): boolean {
@@ -428,7 +450,7 @@ export class Trade {
         return false;
     }
 
-    processLevenshteinMatch(role: RoleType, key: string, value: string, distance: u64): boolean {
+    processLevenshteinMatch(role: RoleType, key: string, value: string, distance: number): boolean {
         if (this.levenshteinMatch(key, value) <= distance) {
             this.addMatchLog(role, key, value);
             return true;

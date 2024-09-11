@@ -56,8 +56,8 @@ export class BoundaryMatchInput {
     UTI: string;            // UTI of the trade
     tokenB64: string;       // Base64 encoded token
     key: string;            
-    min: string;           
-    max: string;
+    min: amount;           
+    max: amount;
 }
 
 @JSON 
@@ -67,7 +67,7 @@ export class LevenshteinMatchInput {
     tokenB64: string;       // Base64 encoded token
     key: string;            
     value: string;           
-    distance: string;
+    distance: amount;
 }
 
 @JSON 

@@ -1,5 +1,5 @@
 import { Context, Notifier } from "@klave/sdk/assembly";
-import { TradeInput, ActionTradeInput, SetIdentitiesInput, UserRequestInput, ApproveUserRequestInput, SharedLedgerIDInput, SubmitTradeInput, MultipleTradeInput} from "./shared_ledger/inputs/types";
+import { TradeInput, ActionTradeInput, SetIdentitiesInput, UserRequestInput, ApproveUserRequestInput, SharedLedgerIDInput, SubmitTradeInput, MultipleTradeInput, KeyValueMatchInput, LevenshteinMatchInput, BoundaryMatchInput} from "./shared_ledger/inputs/types";
 import { ListOutput, GenericOutput, ListTradeIDs } from "./shared_ledger/outputs/types";
 import { Keys } from "./shared_ledger/keys";
 import { success, error } from "./klave/types";
@@ -49,6 +49,82 @@ export function addMetadata(input: ActionTradeInput): void {
     }
     sharedLedger.addMetadata(input);
 }
+
+/**
+ * @transaction
+ */
+export function exactMatch(input: KeyValueMatchInput): void {
+    let sharedLedger = SharedLedger.load(input.SLID);
+    if (sharedLedger === null) {
+        error(`SharedLedger does not exist. Create it first.`);
+        return;
+    }
+
+    if (sharedLedger.locked) {
+        error(`SharedLedger ${input.SLID} is now locked.`);
+        return;
+    }
+
+    let user = User.load(Context.get('sender'));
+    if (user === null)
+    {
+        error("User not found");
+        return;
+    }
+    sharedLedger.exactMatch(input);
+    return;
+}
+
+/**
+ * @transaction
+ */
+export function levenshteinMatch(input: LevenshteinMatchInput): void {
+    let sharedLedger = SharedLedger.load(input.SLID);
+    if (sharedLedger === null) {
+        error(`SharedLedger does not exist. Create it first.`);
+        return;
+    }
+
+    if (sharedLedger.locked) {
+        error(`SharedLedger ${input.SLID} is now locked.`);
+        return;
+    }
+
+    let user = User.load(Context.get('sender'));
+    if (user === null)
+    {
+        error("User not found");
+        return;
+    }
+    sharedLedger.levenshteinMatch(input);
+    return;
+}
+
+/**
+ * @transaction
+ */
+export function boundaryMatch(input: BoundaryMatchInput): void {
+    let sharedLedger = SharedLedger.load(input.SLID);
+    if (sharedLedger === null) {
+        error(`SharedLedger does not exist. Create it first.`);
+        return;
+    }
+
+    if (sharedLedger.locked) {
+        error(`SharedLedger ${input.SLID} is now locked.`);
+        return;
+    }
+
+    let user = User.load(Context.get('sender'));
+    if (user === null)
+    {
+        error("User not found");
+        return;
+    }
+    sharedLedger.boundaryMatch(input);
+    return;
+}
+
 
 /**
  * @transaction
