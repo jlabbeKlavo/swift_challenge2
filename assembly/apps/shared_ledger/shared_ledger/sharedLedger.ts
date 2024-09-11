@@ -214,6 +214,7 @@ export class SharedLedger {
             return false;
         }
         if (trade.processExactMatch(user.getRole(input.SLID),input.key, input.value)) {
+            trade.processStatusProgression();
             trade.save();
         }
         return true;
@@ -241,6 +242,7 @@ export class SharedLedger {
         }
 
         if (trade.processLevenshteinMatch(user.getRole(input.SLID),input.key, input.value, input.distance)) {
+            trade.processStatusProgression();
             trade.save();
         }
         return true;
@@ -268,6 +270,7 @@ export class SharedLedger {
         }
 
         if (trade.processLevenshteinMatch(user.getRole(input.SLID),input.key, input.min, input.max)) {
+            trade.processStatusProgression();
             trade.save();
         }
         return true;

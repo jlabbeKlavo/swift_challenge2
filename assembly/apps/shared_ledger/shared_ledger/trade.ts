@@ -110,6 +110,22 @@ export class MatchLog {
     }
 }
 
+@JSON 
+export class MatchedEvent {
+    key: string;
+    matched: boolean;    
+
+    constructor(key: string, matched: boolean) {
+        this.key = key;
+        this.matched = matched;
+    }
+}
+
+@JSON 
+export class MatchCheckList {
+    events: Array<MatchedEvent>;
+}
+
 /** Status types. */
 export enum StatusType {    
     None = 0,
@@ -230,6 +246,108 @@ export class Trade {
         }        
     }
 
+    checkTradeDetailsMatch(): boolean {
+        let tradeDetails = new MatchCheckList();
+        tradeDetails.events = new Array<MatchedEvent>();
+        tradeDetails.events.push(new MatchedEvent("buyerName", false));
+        tradeDetails.events.push(new MatchedEvent("buyerCountry", false));
+        tradeDetails.events.push(new MatchedEvent("sellerName", false));
+        tradeDetails.events.push(new MatchedEvent("sellerCountry", false));
+        tradeDetails.events.push(new MatchedEvent("asset", false));        
+
+        for (let i = 0; i < this.matchTradeDetails.length; i++) {
+            switch (this.matchTradeDetails[i].matchedKey) {
+                case "buyerName":
+                    tradeDetails.events[0].matched = true;
+                    break;
+                case "buyerCountry":
+                    tradeDetails.events[1].matched = true;
+                    break;
+                case "sellerName":
+                    tradeDetails.events[2].matched = true;
+                    break;
+                case "sellerCountry":
+                    tradeDetails.events[3].matched = true;
+                    break;
+                case "asset":
+                    tradeDetails.events[4].matched = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+        for (let i = 0; i < tradeDetails.events.length; i++) {
+            if (!tradeDetails.events[i].matched) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    checkAssetTransferMatch(): boolean {
+        let assetTransfer = new MatchCheckList();
+        assetTransfer.events = new Array<MatchedEvent>();
+        assetTransfer.events.push(new MatchedEvent("quantity", false));
+        assetTransfer.events.push(new MatchedEvent("asset", false));
+
+        for (let i = 0; i < this.matchAssetTransfer.length; i++) {
+            switch (this.matchAssetTransfer[i].matchedKey) {
+                case "quantity":
+                    assetTransfer.events[0].matched = true;
+                    break;
+                case "asset":
+                    assetTransfer.events[1].matched = true;
+                    break;
+                default:
+                    break;                    
+            }
+        }
+        for (let i = 0; i < assetTransfer.events.length; i++) {
+            if (!assetTransfer.events[i].matched) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    checkMoneyTransferMatch(): boolean {
+        let moneyTransfer = new MatchCheckList();
+        moneyTransfer.events = new Array<MatchedEvent>();
+        moneyTransfer.events.push(new MatchedEvent("price", false));
+        moneyTransfer.events.push(new MatchedEvent("asset", false));
+
+        for (let i = 0; i < this.matchMoneyTransfer.length; i++) {
+            switch (this.matchMoneyTransfer[i].matchedKey) {
+                case "price":
+                    moneyTransfer.events[0].matched = true;
+                    break;
+                case "asset":
+                    moneyTransfer.events[1].matched = true;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        for (let i = 0; i < moneyTransfer.events.length; i++) {
+            if (!moneyTransfer.events[i].matched) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    processStatusProgression(): void {
+        if (this.status === StatusType.Executed && this.checkTradeDetailsMatch()) {
+            this.status = StatusType.Settling;
+            this.statusHistory.push(new StatusLog(Context.get("trusted_time"), this.status));
+        }
+        if (this.status === StatusType.Settling && this.checkAssetTransferMatch() && this.checkMoneyTransferMatch()) {
+            this.status = StatusType.Settled;
+            this.statusHistory.push(new StatusLog(Context.get("trusted_time"), this.status));
+        }
+    }
+
     exactMatch(key: string, value: string): boolean {
         let tradeInfo = this.tradeCreation[this.tradeCreation.length-1].info;
         switch (key) {
@@ -296,6 +414,7 @@ export class Trade {
     processExactMatch(role: RoleType, key: string, value: string): boolean {
         if (this.exactMatch(key, value)) {
             this.addMatchLog(role, key, value);
+            this.processStatusProgression();
             return true;
         }
         return false;
