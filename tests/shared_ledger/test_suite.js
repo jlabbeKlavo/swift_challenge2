@@ -6,7 +6,7 @@ const { importPublicKey } = require('./test_sdk');
 
 //wasm to deploy must be copied post generation coming from yarn build command
 const app_id = "test_shared_ledger";
-const fqdn = "test_shared_ledger_smart_contract_florian_4";
+const fqdn = "test_shared_ledger_smart_contract_jeremie_12";
 const WASM_TEST_SHARED_LEDGER = './config/wasm/shared_ledger.b64';
 
 const deploySharedLedger = async () => {
@@ -216,7 +216,7 @@ const testSharedLedger = async (user) => {
   if (user_connected) {
     let userContent = await getUserContent();
     if (userContent && userContent.roles.length > 0 &&
-      userContent.roles[0].sharedLedgerId == "super" && userContent.roles[0].role == "admin") {
+      userContent.roles[0].sharedLedgerId == "super" && userContent.roles[0].role == 1) {
 
     } 
     else {
@@ -224,7 +224,7 @@ const testSharedLedger = async (user) => {
       let result = await klaveTransaction(fqdn, "createSuperAdmin", "");
       if (result.success == false) {
         console.log("Cannot Reset Identities");
-        result = await createUserRequest("super", "admin");
+        result = await createUserRequest("super", 1);
         userContent = await getUserContent();
         return "";
       }    
@@ -292,6 +292,7 @@ const testAddTrade = async (user, sharedLedgerId, role, jurisdiction, buyer, buy
     let sharedLedgerContent = await getSharedLedgerContent(sharedLedgerId);
     console.assert(sharedLedgerContent, "Error getting sharedLedger content");
 
+    let tradeIds = await getAllTrades(sharedLedgerId);
   }
   klaveCloseConnection();    
 
@@ -340,7 +341,7 @@ const testAddMetadata = async (user, sharedLedgerId, role, jurisdiction, publicD
   klaveCloseConnection();    
 }
 
-const testMatchTradeDetails = async (user, sharedLedgerId, role, jurisdiction, buyerName, buyerCountry, sellerName, sellerCountry ) => {
+const testMatchTradeDetails = async (user, sharedLedgerId, role, jurisdiction, buyerName, buyerCountry, sellerName, sellerCountry, asset ) => {
   let user_connected = await klaveOpenConnection(user);
   console.log("user_connected: ", user_connected);
 
@@ -379,8 +380,109 @@ const testMatchTradeDetails = async (user, sharedLedgerId, role, jurisdiction, b
       let results = [];
       results[0] = await exactMatch(sharedLedgerId, UTI, tokenB64, "buyerName", buyerName);
       results[1] = await exactMatch(sharedLedgerId, UTI, tokenB64, "buyerCountry", buyerCountry);
-      results[2] = await exactMatch(sharedLedgerId, UTI, tokenB64, "sellerName", sellerName);
-      results[3] = await exactMatch(sharedLedgerId, UTI, tokenB64, "sellerCountry", sellerCountry);
+      results[2] = await levenshteinMatch(sharedLedgerId, UTI, tokenB64, "sellerName", sellerName, 0);
+      results[3] = await levenshteinMatch(sharedLedgerId, UTI, tokenB64, "sellerCountry", sellerCountry, 1);
+      results[3] = await levenshteinMatch(sharedLedgerId, UTI, tokenB64, "asset", asset, 1);
+
+      for (let i = 0; i < results.length; i++) {
+        success = success && results[i].success;
+      }
+    }
+
+    return success;
+  }
+  klaveCloseConnection();    
+}
+
+const testMatchAssetTransfer = async (user, sharedLedgerId, role, jurisdiction, asset, quantity ) => {
+  let user_connected = await klaveOpenConnection(user);
+  console.log("user_connected: ", user_connected);
+
+  if (user_connected) {    
+    
+    let userContent = await getUserContent();
+    if (!userContent) {
+      console.error("Error getting user content");
+
+      let success = await addUserNoAppovalNeeded(sharedLedgerId, role, jurisdiction);
+      if (success == false) {
+        console.error("Error creating user request");
+        return;
+      }    
+      userContent = await getUserContent();
+      if (!userContent) {
+        console.error("Error getting user content");
+        return;
+      }
+    }    
+    if (userContent.roles.length == 0) {
+      console.error("No roles found");
+      return;
+    }
+    if (userContent.roles[0].sharedLedgerId != sharedLedgerId) {
+      console.error("User not associated with sharedLedger");
+      return;
+    }
+
+    let success = true;
+    let tradeIds = await getAllTrades(sharedLedgerId);
+    for (let i = 0; i < tradeIds.length; i++) {
+      let UTI = tradeIds[i].UTI;
+      let tokenB64 = tradeIds[i].tokenB64;      
+
+      let results = [];
+      results[0] = await boundaryMatch(sharedLedgerId, UTI, tokenB64, "quantity", quantity-1,quantity+1);
+      results[1] = await levenshteinMatch(sharedLedgerId, UTI, tokenB64, "asset", asset, 1);
+
+      for (let i = 0; i < results.length; i++) {
+        success = success && results[i].success;
+      }
+    }
+
+    return success;
+  }
+  klaveCloseConnection();    
+}
+
+const testMatchMoneyTransfer = async (user, sharedLedgerId, role, jurisdiction, asset, price) => {
+  let user_connected = await klaveOpenConnection(user);
+  console.log("user_connected: ", user_connected);
+
+  if (user_connected) {    
+    
+    let userContent = await getUserContent();
+    if (!userContent) {
+      console.error("Error getting user content");
+
+      let success = await addUserNoAppovalNeeded(sharedLedgerId, role, jurisdiction);
+      if (success == false) {
+        console.error("Error creating user request");
+        return;
+      }    
+      userContent = await getUserContent();
+      if (!userContent) {
+        console.error("Error getting user content");
+        return;
+      }
+    }    
+    if (userContent.roles.length == 0) {
+      console.error("No roles found");
+      return;
+    }
+    if (userContent.roles[0].sharedLedgerId != sharedLedgerId) {
+      console.error("User not associated with sharedLedger");
+      return;
+    }
+
+    let success = true;
+    let tradeIds = await getAllTrades(sharedLedgerId);
+    for (let i = 0; i < tradeIds.length; i++) {
+      let UTI = tradeIds[i].UTI;
+      let tokenB64 = tradeIds[i].tokenB64;      
+
+      let results = [];
+      results[0] = await boundaryMatch(sharedLedgerId, UTI, tokenB64, "price", price-1,price+1);
+      results[1] = await levenshteinMatch(sharedLedgerId, UTI, tokenB64, "asset", asset, 1);
 
       for (let i = 0; i < results.length; i++) {
         success = success && results[i].success;
@@ -418,7 +520,7 @@ const testApproveRequests = async (user) => {
   klaveCloseConnection();  
 }
 
-const testQueryInfo = async (user, sharedLedgerId, UTI, tokenB64) => {
+const testQueryInfo = async (user, sharedLedgerId) => {
   let user_connected = await klaveOpenConnection(user);
   console.log("user_connected: ", user_connected);
 
@@ -436,12 +538,17 @@ const testQueryInfo = async (user, sharedLedgerId, UTI, tokenB64) => {
       console.error("User not associated with sharedLedger");
       return;
     }
-    let result = await getTradeInfo(sharedLedgerId, UTI, tokenB64);
+    let tradeIds = await getAllTrades(sharedLedgerId);
+    for (let i = 0; i < tradeIds.length; i++) {
+      let UTI = tradeIds[i].UTI;
+      let tokenB64 = tradeIds[i].tokenB64;
+      let result = await getTradeInfo(sharedLedgerId, UTI, tokenB64);
+    }
   }
   klaveCloseConnection();  
 }
 
-const testAudit = async (user, sharedLedgerId, role, jurisdiction, trades) => {
+const testAudit = async (user, sharedLedgerId, role, jurisdiction) => {
   let user_connected = await klaveOpenConnection(user);
   console.log("user_connected: ", user_connected);
 
@@ -469,7 +576,9 @@ const testAudit = async (user, sharedLedgerId, role, jurisdiction, trades) => {
       console.error("User not associated with sharedLedger");
       return;
     }
-    let result = await getMultipleTradeInfo(sharedLedgerId, trades);
+    let tradeIds = await getAllTrades(sharedLedgerId);
+
+    let result = await getMultipleTradeInfo(sharedLedgerId, tradeIds);
   }
   klaveCloseConnection();  
 }
@@ -481,6 +590,8 @@ module.exports = {
     testAddTrade,
     testAddMetadata,
     testMatchTradeDetails,
+    testMatchMoneyTransfer,
+    testMatchAssetTransfer,
     testApproveRequests,
     testQueryInfo,
     testAudit,    

@@ -262,11 +262,6 @@ export function createSharedLedger(input: SharedLedgerIDInput): void {
         error("User not found");
         return;
     }
-    if (!user.isAdmin("super"))
-    {
-        error("You are not allowed to create a dataroom.");
-        return;
-    }
     let sharedLedgers = SharedLedgers.load();
     if (sharedLedgers.addSharedLedger(input.SLID)) {
         sharedLedgers.save();
@@ -298,11 +293,6 @@ export function listUserRequests(unused: string): void {
         error("User not found");
         return;
     }
-    if (!user.isAdmin("super"))
-    {
-        error("You are not allowed to see user requests");
-        return;
-    }
 
     let userRequests = UserRequests.load();
     userRequests.list();
@@ -316,11 +306,6 @@ export function approveUserRequest(input: ApproveUserRequestInput): void {
     if (user === null)
     {
         error("User not found");
-        return;
-    }
-    if (!user.isAdmin("super"))
-    {
-        error("You are not allowed to see user requests");
         return;
     }
 
@@ -388,11 +373,6 @@ export function resetIdentities(input: SetIdentitiesInput): void {
         error("User not found");
         return;
     }
-    if (!user.isAdmin("super"))
-    {
-        error("You are not allowed to reset identities");
-        return;
-    }
 
     let keys = Keys.load();    
     let save = false;
@@ -458,11 +438,6 @@ export function clearAll(unused: string): void {
         error("User not found");
         return;
     }
-    // if (!user.isAdmin("super"))
-    // {
-    //     error("You are not allowed to clear all data.");
-    //     return;
-    // }
     user.delete();
 
     let sharedLedgers = SharedLedgers.load();

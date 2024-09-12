@@ -429,7 +429,6 @@ export class Trade {
     processExactMatch(role: RoleType, key: string, value: string): boolean {
         if (this.exactMatch(key, value)) {
             this.addMatchLog(role, key, value);
-            this.processStatusProgression();
             return true;
         }
         return false;

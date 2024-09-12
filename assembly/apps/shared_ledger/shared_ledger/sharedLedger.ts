@@ -381,18 +381,18 @@ export class SharedLedger {
                 case RoleType.Dealer:
                 case RoleType.Broker:
                 case RoleType.Investor:
-                    if (tradeInfo.addedBy == user.id && trade.status === StatusType.Executed) {
+                    if (tradeInfo.addedBy == user.id) {
                         result.push(new TradeIdentification(trade.UTI, trade.tokenB64));
                     }
                     break;
                 case RoleType.SettlementAgent:
-                    if (trade.status === StatusType.Executed || trade.status === StatusType.Settling) {
+                    if (trade.status === StatusType.Executed || trade.status === StatusType.Settling || trade.status === StatusType.Settled) {
                         result.push(new TradeIdentification(trade.UTI, trade.tokenB64));
                     }
                     break;
                 case RoleType.ClearingHouse:
                 case RoleType.Custodian:
-                    if (trade.status === StatusType.Settling) {
+                    if (trade.status === StatusType.Settling || trade.status === StatusType.Settled) {
                         result.push(new TradeIdentification(trade.UTI, trade.tokenB64));
                     }
                     break;
@@ -418,6 +418,7 @@ export class SharedLedger {
         }
 
         trade.auditHistory.push(new AuditLog(user.id, Context.get("trusted_time")));
+        trade.save();
 
         let filteredTrade = trade;
         let role = user.getRole(this.id)
@@ -463,7 +464,6 @@ export class SharedLedger {
             default:                
                 return "`Error: User ${user.id} is not authorized to query trade ${UTI}`";
         }
-        trade.save();
         return JSON.stringify<Trade>(filteredTrade);        
     }
 
