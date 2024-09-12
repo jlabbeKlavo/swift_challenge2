@@ -82,11 +82,11 @@ export function jurisdiction_type(input: string): JurisdictionType {
 export class SharedLedgerRole {
     sharedLedgerId: string;
     role: RoleType;
-    jurisdiction: string;
+    jurisdiction: JurisdictionType;
 
-    constructor(sharedLedgerId: string, role: string, jurisdiction: string) {
+    constructor(sharedLedgerId: string, role: RoleType, jurisdiction: JurisdictionType) {
         this.sharedLedgerId = sharedLedgerId;
-        this.role = role_type(role);
+        this.role = role;
         this.jurisdiction = jurisdiction;
     }
 }

@@ -7,7 +7,7 @@ import { UserRequests } from "./shared_ledger/userRequests";
 import { UserRequest } from "./shared_ledger/userRequest";
 import { SharedLedger } from "./shared_ledger/sharedLedger";
 import { Users } from "./shared_ledger/users";
-import { SharedLedgerRole, User } from "./shared_ledger/user";
+import { JurisdictionType, RoleType, SharedLedgerRole, User } from "./shared_ledger/user";
 import { SharedLedgers } from "./shared_ledger/sharedLedgers";
 
 /**
@@ -24,7 +24,7 @@ export function submitTrade(input: SubmitTradeInput): void {
         sharedLedger.save();    
         return;
     }
-}
+}   
 
 /**
  * @transaction
@@ -247,7 +247,7 @@ export function createSuperAdmin(unused: string): void {
         error("Super admin already exists");
         return;
     }
-    if (users.addUser(Context.get('sender'), "super", "admin", "global")) {
+    if (users.addUser(Context.get('sender'), "super", RoleType.Admin, JurisdictionType.Global)) {
         users.save();
         success(`Super admin set-up successfully.`);
     }
@@ -278,7 +278,7 @@ export function createSharedLedger(input: SharedLedgerIDInput): void {
  */
 export function createUserRequest(input: UserRequestInput): void {
     let users = Users.load();
-    if (users.addUser(Context.get('sender'), input.SLID, "pending", input.jurisdiction)) {
+    if (users.addUser(Context.get('sender'), input.SLID, input.role, input.jurisdiction)) {
         users.save();
     }
     
@@ -331,7 +331,7 @@ export function approveUserRequest(input: ApproveUserRequestInput): void {
         return;
     }
 
-    if (userRequest.sharedLedgerId === "super" && userRequest.role === "admin") {
+    if (userRequest.sharedLedgerId === "super" && userRequest.role === RoleType.Admin) {
         // This is a user request to become an admin
         let user = User.load(userRequest.userId);
         if (user === null)
@@ -458,11 +458,11 @@ export function clearAll(unused: string): void {
         error("User not found");
         return;
     }
-    if (!user.isAdmin("super"))
-    {
-        error("You are not allowed to clear all data.");
-        return;
-    }
+    // if (!user.isAdmin("super"))
+    // {
+    //     error("You are not allowed to clear all data.");
+    //     return;
+    // }
     user.delete();
 
     let sharedLedgers = SharedLedgers.load();

@@ -5,7 +5,7 @@ import { AuditLog, MatchLog, StatusLog, StatusType, Trade, TradeCreation, TradeI
 import { ActionTradeInput, BoundaryMatchInput, KeyValueMatchInput, LevenshteinMatchInput, SubmitTradeInput, TradeIdentification, TradeInput } from "./inputs/types";
 import { Notifier } from "@klave/sdk/assembly";
 import { SharedLedgerContent, SharedLedgerContentOutput, SubmitTradeOutput } from "./outputs/types";
-import { RoleType, SharedLedgerRole, User } from "./user";
+import { JurisdictionType, RoleType, SharedLedgerRole, User } from "./user";
 import { Keys } from "./keys";
 import { Users } from "./users";
 
@@ -341,7 +341,7 @@ export class SharedLedger {
         });
     }
 
-    addUser(userId: string, role: string, jurisdiction: string): boolean {
+    addUser(userId: string, role: RoleType, jurisdiction: JurisdictionType): boolean {
         if (!this.users.includes(userId)) {
             let user = User.load(userId);
             if (!user)

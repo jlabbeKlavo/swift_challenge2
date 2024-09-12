@@ -4,7 +4,7 @@ import { encode as b64encode, decode as b64decode } from 'as-base64/assembly';
 import { address, amount, datetime } from "../klave/types";
 import { ActionTradeInput } from './inputs/types';
 import { Context } from '@klave/sdk/assembly';
-import { RoleType } from './user';
+import { JurisdictionType, RoleType } from './user';
 import { levenshtein } from './levenshtein';
 
 const TradesTable = "TradesTable";
@@ -19,7 +19,7 @@ export class TradeInfo {
     quantity: amount;               // Quantity of the asset        
     price: amount;                  // Trade price                  
     tradeDate: datetime;            // Date and time of trade execution 
-    jurisdiction: string;           // Jurisdiction of the trade
+    jurisdiction: JurisdictionType;           // Jurisdiction of the trade
 
     constructor(tradeInput: TradeInfo) {
         this.buyerName = tradeInput.buyerName;
@@ -41,7 +41,7 @@ export class TradeInfo {
         this.quantity = 0;
         this.price = 0;
         this.tradeDate = "";
-        this.jurisdiction = "";
+        this.jurisdiction = JurisdictionType.None;
     }
 }
 
@@ -66,7 +66,7 @@ export class TradeCreation {
         this.info.quantity = 0;
         this.info.price = 0;
         this.info.tradeDate = "";
-        this.info.jurisdiction = "";
+        this.info.jurisdiction = JurisdictionType.None;
         this.addedBy = "";
         this.datetime = "";        
     }
@@ -79,7 +79,7 @@ export class TradeCreation {
         this.info.quantity = 0;
         this.info.price = 0;
         this.info.tradeDate = "";
-        this.info.jurisdiction = "";
+        this.info.jurisdiction = JurisdictionType.None;
     }
 
 }
@@ -380,9 +380,6 @@ export class Trade {
         if (key === "asset") {
             return tradeInfo.asset === value;
         }
-        if (key === "jurisdiction") {
-            return tradeInfo.jurisdiction === value;
-        }
         if (key === "quantity") {
             return tradeInfo.quantity.toString() === value;
         }
@@ -411,9 +408,6 @@ export class Trade {
         }
         if (key === "asset") {
             return levenshtein(tradeInfo.asset, value);
-        }
-        if (key === "jurisdiction") {
-            return levenshtein(tradeInfo.jurisdiction, value);
         }
         return -1;
     }

@@ -3,6 +3,7 @@ import { success, error } from "../klave/types";
 import { UserRequest } from "./userRequest";
 import { ListOutput } from "./outputs/types";
 import { Notifier } from "@klave/sdk/assembly";
+import { JurisdictionType, RoleType } from "./user";
 
 const UserRequestsTable = "UserRequestsTable";
 
@@ -46,7 +47,7 @@ export class UserRequests {
      * @param dataRoomId 
      * @param role 
      */
-    addUserRequest(dataRoomId: string, role: string, jurisdiction: string): boolean {
+    addUserRequest(dataRoomId: string, role: RoleType, jurisdiction: JurisdictionType): boolean {
         let userRequest = new UserRequest(dataRoomId, role, jurisdiction);
         userRequest.save();
         this.userRequests.push(userRequest.id);

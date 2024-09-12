@@ -1,6 +1,7 @@
 import { JSON } from "@klave/sdk";
-import { address, amount, datetime } from "../../klave/types";
+import { amount } from "../../klave/types";
 import { TradeInfo } from "../trade";
+import { JurisdictionType, RoleType } from "../user";
 
 @JSON 
 export class SubmitTradeInput {
@@ -78,10 +79,10 @@ export class SetIdentitiesInput {
 @JSON
 export class UserRequestInput {
     SLID: string;
-    role: string;
-    jurisdiction: string;
+    role: RoleType;
+    jurisdiction: JurisdictionType;
 
-    constructor(SLID: string, role: string, jurisdiction: string) {
+    constructor(SLID: string, role: RoleType, jurisdiction: JurisdictionType) {
         this.SLID = SLID;
         this.role = role;
         this.jurisdiction = jurisdiction;

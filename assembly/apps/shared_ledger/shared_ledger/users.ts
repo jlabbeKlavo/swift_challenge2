@@ -2,7 +2,7 @@ import { Ledger, JSON, Context } from "@klave/sdk";
 import { success, error } from "../klave/types";
 import { ListOutput } from "./outputs/types";
 import { Notifier } from "@klave/sdk/assembly";
-import { SharedLedgerRole, User } from "./user";
+import { JurisdictionType, RoleType, SharedLedgerRole, User } from "./user";
 
 const UsersTable = "UsersTable";
 
@@ -46,7 +46,7 @@ export class Users {
      * @param userId The id of the user to add.     
      * @param dataRoomId The id of the dataRoom the user would want a role for.
      */
-    addUser(userId: string, sharedLedgerId: string, role: string, jurisdiction: string): boolean {
+    addUser(userId: string, sharedLedgerId: string, role: RoleType, jurisdiction: JurisdictionType): boolean {
         let existingUser = User.load(userId);
         if (existingUser) {
             error(`User already exists: ${userId}`);
