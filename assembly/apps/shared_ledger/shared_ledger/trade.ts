@@ -197,9 +197,8 @@ export class Trade {
         if (UTI.length === 0) {
             //Create a UTI with a format corresponding to BOFAUS3N.TRADE20230905SEQ1234567890
             //<SWIFTCode>.TRADE<YYYYMMDD><sequence number for uniqueness>
-            let datetime = parseInt(tradeInfo.tradeDate);
-            let date = new Date(u64(datetime));
-            this.UTI = "SWIFT" + b64encode(Crypto.Utils.convertToUint8Array(Crypto.getRandomValues(4))) + ".TRADE" + date.toISOString() + "SEQ" + b64encode(Crypto.Utils.convertToUint8Array(Crypto.getRandomValues(8)));
+            let dateString = new Date(u64(parseInt(tradeInfo.tradeDate))).toISOString().slice(0, 10).replace("-", "").replace("-", "");
+            this.UTI = "SWIFT" + b64encode(Crypto.Utils.convertToUint8Array(Crypto.getRandomValues(4))) + ".TRADE" + dateString + "SEQ" + b64encode(Crypto.Utils.convertToUint8Array(Crypto.getRandomValues(8)));
         }
         this.tradeCreation=new TradeCreation(Context.get('sender'), Context.get("trusted_time"), tradeInfo);
         this.tradePublicComments = new Array<TradeComment>();

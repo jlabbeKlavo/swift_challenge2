@@ -221,7 +221,7 @@ export class SharedLedger {
         return false;
     }
 
-    levenshteinMatch(input: LevenshteinMatchInput): false {
+    levenshteinMatch(input: LevenshteinMatchInput): boolean {
         if (!this.users.includes(Context.get('sender'))) {
             error(`You are not authorized to interact (Read or Write) with trades on this sharedLedger.`);
             return false;

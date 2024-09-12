@@ -76,6 +76,9 @@ export function exactMatch(input: KeyValueMatchInput): void {
     if (sharedLedger.exactMatch(input)) {
         success(`Exact match found for ${input.key} = ${input.value}`);
     }
+    else {
+        error(`Exact match not found for ${input.key} = ${input.value}`);
+    }
 
     return;
 }
@@ -104,6 +107,9 @@ export function levenshteinMatch(input: LevenshteinMatchInput): void {
     if (sharedLedger.levenshteinMatch(input)) {
         success(`Levenshtein match found for ${input.key} = ${input.value}`);
     }
+    else {
+        error(`Levenshtein match not found for ${input.key} = ${input.value}`);
+    }
     return;
 }
 
@@ -130,6 +136,9 @@ export function boundaryMatch(input: BoundaryMatchInput): void {
     }
     if (sharedLedger.boundaryMatch(input)) {
         success(`Boundary match found for ${input.key} between ${input.min} and ${input.max}`);
+    }
+    else {
+        error(`Boundary match not found for ${input.key} between ${input.min} and ${input.max}`);
     }
     return;
 }
