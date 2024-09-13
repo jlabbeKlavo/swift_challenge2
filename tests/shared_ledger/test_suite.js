@@ -1,12 +1,12 @@
 const fs = require('fs');
 const { subtle_Hash } = require('./subtle');
-const { klaveDeployApp, klaveTransaction, klaveQuery, klaveCloseConnection, klaveOpenConnection } = require('../../klave_network');
+const { klaveDeployApp, klaveTransaction, klaveQuery, klaveCloseConnection, klaveOpenConnection, klaveAddKredits } = require('../../klave_network');
 const { arrayBufferToBase64 } = require('../../utils');
 const { importPublicKey } = require('./test_sdk');
 
 //wasm to deploy must be copied post generation coming from yarn build command
 const app_id = "test_shared_ledger";
-const fqdn = "test_shared_ledger_smart_contract_jeremie_12";
+const fqdn = "test_shared_ledger_smart_contract_florian_6";
 const WASM_TEST_SHARED_LEDGER = './config/wasm/shared_ledger.b64';
 
 const deploySharedLedger = async () => {
@@ -15,6 +15,16 @@ const deploySharedLedger = async () => {
   if (user_connected)
   {
     let result = await klaveDeployApp(app_id, fqdn, WASM_TEST_SHARED_LEDGER);
+  }
+  klaveCloseConnection();
+}
+
+const addKredits = async () => {
+  let user_connected = await klaveOpenConnection(`klave1`);
+  console.log("user_connected: ", user_connected);
+  if (user_connected)
+  {
+    let result = await klaveAddKredits(app_id, 1000000000000);
   }
   klaveCloseConnection();
 }
@@ -520,7 +530,7 @@ const testApproveRequests = async (user) => {
   klaveCloseConnection();  
 }
 
-const testQueryInfo = async (user, sharedLedgerId) => {
+const testQueryInfo = async (user, sharedLedgerId, role, jurisdiction) => {
   let user_connected = await klaveOpenConnection(user);
   console.log("user_connected: ", user_connected);
 
@@ -528,7 +538,17 @@ const testQueryInfo = async (user, sharedLedgerId) => {
     let userContent = await getUserContent();
     if (!userContent) {
       console.error("Error getting user content");
-      return;
+
+      let success = await addUserNoAppovalNeeded(sharedLedgerId, role, jurisdiction);
+      if (success == false) {
+        console.error("Error creating user request");
+        return;
+      }    
+      userContent = await getUserContent();
+      if (!userContent) {
+        console.error("Error getting user content");
+        return;
+      }
     }    
     if (userContent.roles.length == 0) {
       console.error("No roles found");
@@ -585,6 +605,7 @@ const testAudit = async (user, sharedLedgerId, role, jurisdiction) => {
 
 module.exports = {
     deploySharedLedger,
+    addKredits,
     clearSharedLedgerApp,
     testSharedLedger,
     testAddTrade,

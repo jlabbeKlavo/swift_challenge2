@@ -97,5 +97,6 @@ module.exports = {
     klaveCloseConnection,
     klaveDeployApp,
     klaveTransaction, 
-    klaveQuery
+    klaveQuery,
+    klaveAddKredits
 }

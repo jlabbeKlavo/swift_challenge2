@@ -280,7 +280,6 @@ export class Trade {
         tradeDetails.events.push(new MatchedEvent("buyerCountry", false));
         tradeDetails.events.push(new MatchedEvent("sellerName", false));
         tradeDetails.events.push(new MatchedEvent("sellerCountry", false));
-        tradeDetails.events.push(new MatchedEvent("asset", false));        
 
         for (let i = 0; i < this.matchTradeDetails.length; i++) {
             if (this.matchTradeDetails[i].matchedKey == "buyerName") {
@@ -294,9 +293,6 @@ export class Trade {
             }
             if (this.matchTradeDetails[i].matchedKey == "sellerCountry") {
                 tradeDetails.events[3].matched = true;
-            }
-            if (this.matchTradeDetails[i].matchedKey == "asset") {
-                tradeDetails.events[4].matched = true;
             }
         }
         for (let i = 0; i < tradeDetails.events.length; i++) {
