@@ -1,14 +1,41 @@
 const { deployTestSDK } = require('./tests/shared_ledger/test_sdk');
-const { clearSharedLedgerApp, testSharedLedger, testApproveRequests, testAddTrade, testAddMetadata, deploySharedLedger, testQueryInfo, testAudit, testMatchTradeDetails, testMatchAssetTransfer, testMatchMoneyTransfer, addKredits } = require('./tests/shared_ledger/test_suite');
+const { clearSharedLedgerApp, testSharedLedger, testApproveRequests, testAddTrade, testAddMetadata, deploySharedLedger, testQueryInfo, testAudit, testMatchTradeDetails, testMatchAssetTransfer, testMatchMoneyTransfer, testMatchAMLSanction, addKredits } = require('./tests/shared_ledger/test_suite');
 
 const deployApp = true;
 const doNotDeployApp = false;
 
+function levenshtein(a, b) {
+  var t = [], u, i, j, m = a.length, n = b.length;
+  if (!m) { return n; }
+  if (!n) { return m; }
+  for (j = 0; j <= n; j++) { t[j] = j; }
+  for (i = 1; i <= m; i++) {
+    for (u = [i], j = 1; j <= n; j++) {
+      u[j] = a[i - 1] === b[j - 1] ? t[j - 1] : Math.min(t[j - 1], t[j], u[j - 1]) + 1;
+    } t = u;
+  } return u[n];
+}
+
+const testLevenshtein = async () => {
+  //tests levenshtein function
+  console.assert(levenshtein('kitten', 'sitting') === 3, 'levenshtein failed');
+  console.assert(levenshtein('kitten', 'kitten') === 0, 'levenshtein failed');
+  console.assert(levenshtein('kitten', 'kittens') === 1, 'levenshtein failed');
+  console.assert(levenshtein('kitten', 'kittenss') === 2, 'levenshtein failed');
+  console.assert(levenshtein('kitten', 'kittensss') === 3, 'levenshtein failed');
+  console.assert(levenshtein('kitten', 'kittenssss') === 4, 'levenshtein failed');
+  console.assert(levenshtein('kitten', 'k') === 5, 'levenshtein failed');
+  console.assert(levenshtein('kitten', '') === 6, 'levenshtein failed');
+  console.assert(levenshtein('', 'kitten') === 6, 'levenshtein failed');  
+}
+
 const runTests = async () => {
   // await deployTestSDK();
-  // await deploySharedLedger();
-  await addKredits();
+  await deploySharedLedger();
+  // await addKredits();
   
+  // await testLevenshtein();
+
   // let success = await clearSharedLedgerApp('klave1');
   // let [sharedLedgerId1] = await testSharedLedger('klave1');
 
@@ -41,6 +68,9 @@ const runTests = async () => {
 
   // success = await testMatchMoneyTransfer('klave5', sharedLedgerId1, 7, 'northernEurope', 'Asset#1', 134567);
   // console.assert(success === true, 'klave5 should be able to confirm the trade');
+
+  // success = await testMatchAMLSanction('klave6', sharedLedgerId1, 10, 'northernEurope', 'true', 0.02);
+  // console.assert(success === true, 'klave6 should be able to confirm the trade');
 
   // //Try several profiles
   // success = await testQueryInfo('klave2', sharedLedgerId1);    

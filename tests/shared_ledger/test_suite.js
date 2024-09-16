@@ -1,12 +1,11 @@
 const fs = require('fs');
-const { subtle_Hash } = require('./subtle');
 const { klaveDeployApp, klaveTransaction, klaveQuery, klaveCloseConnection, klaveOpenConnection, klaveAddKredits } = require('../../klave_network');
-const { arrayBufferToBase64 } = require('../../utils');
 const { importPublicKey } = require('./test_sdk');
 
 //wasm to deploy must be copied post generation coming from yarn build command
 const app_id = "test_shared_ledger";
-const fqdn = "test_shared_ledger_smart_contract_florian_6";
+//const fqdn = "test_shared_ledger_smart_contract_florian_6";
+const fqdn = "test_shared_ledger_smart_contract_jeremie_13";
 const WASM_TEST_SHARED_LEDGER = './config/wasm/shared_ledger.b64';
 
 const deploySharedLedger = async () => {
@@ -390,6 +389,7 @@ const testMatchTradeDetails = async (user, sharedLedgerId, role, jurisdiction, b
       let results = [];
       results[0] = await exactMatch(sharedLedgerId, UTI, tokenB64, "buyerName", buyerName);
       results[1] = await exactMatch(sharedLedgerId, UTI, tokenB64, "buyerCountry", buyerCountry);
+      results[2] = await levenshteinMatch(sharedLedgerId, UTI, tokenB64, "sellerName", "s", 3);
       results[2] = await levenshteinMatch(sharedLedgerId, UTI, tokenB64, "sellerName", sellerName, 0);
       results[3] = await levenshteinMatch(sharedLedgerId, UTI, tokenB64, "sellerCountry", sellerCountry, 1);
       results[3] = await levenshteinMatch(sharedLedgerId, UTI, tokenB64, "asset", asset, 1);
@@ -504,6 +504,55 @@ const testMatchMoneyTransfer = async (user, sharedLedgerId, role, jurisdiction, 
   klaveCloseConnection();    
 }
 
+const testMatchAMLSanction = async (user, sharedLedgerId, role, jurisdiction, underSanction, AMLrisk) => {
+  let user_connected = await klaveOpenConnection(user);
+  console.log("user_connected: ", user_connected);
+
+  let success = true;
+  if (user_connected) {    
+    
+    let userContent = await getUserContent();
+    if (!userContent) {
+      console.error("Error getting user content");
+
+      let success = await addUserNoAppovalNeeded(sharedLedgerId, role, jurisdiction);
+      if (success == false) {
+        console.error("Error creating user request");
+        return;
+      }    
+      userContent = await getUserContent();
+      if (!userContent) {
+        console.error("Error getting user content");
+        return;
+      }
+    }    
+    if (userContent.roles.length == 0) {
+      console.error("No roles found");
+      return;
+    }
+    if (userContent.roles[0].sharedLedgerId != sharedLedgerId) {
+      console.error("User not associated with sharedLedger");
+      return;
+    }
+
+    let tradeIds = await getAllTrades(sharedLedgerId);
+    for (let i = 0; i < tradeIds.length; i++) {
+      let UTI = tradeIds[i].UTI;
+      let tokenB64 = tradeIds[i].tokenB64;      
+
+      let results = [];
+      results[0] = await exactMatch(sharedLedgerId, UTI, tokenB64, "underSanction", underSanction);
+      results[1] = await boundaryMatch(sharedLedgerId, UTI, tokenB64, "amlRiskRank", 0, AMLrisk);
+
+      for (let i = 0; i < results.length; i++) {
+        success = success && results[i].success;
+      }
+    }
+  }
+  klaveCloseConnection();    
+  return success;
+}
+
 const testApproveRequests = async (user) => {
   let user_connected = await klaveOpenConnection(user);
   console.log("user_connected: ", user_connected);
@@ -613,6 +662,7 @@ module.exports = {
     testMatchTradeDetails,
     testMatchMoneyTransfer,
     testMatchAssetTransfer,
+    testMatchAMLSanction,
     testApproveRequests,
     testQueryInfo,
     testAudit,    
